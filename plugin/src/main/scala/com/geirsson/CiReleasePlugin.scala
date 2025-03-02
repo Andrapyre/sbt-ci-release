@@ -170,18 +170,17 @@ object CiReleasePlugin extends AutoPlugin {
         val publishCommand = getPublishCommand(currentState)
 
         if (shouldDeployToSonatypeCentral) {
-          if (isSnapshot) {
+          if (!isTag && !isSnapshot) {
             println(
-              s"Sonatype Central does not accept snapshots, only official releases. Aborting release."
+              "No tag push or snapshot release detected. Please publish a release via a tag or a snapshot release with a -SNAPSHOT suffix to the package name."
             )
-            currentState
-          } else if (!isTag) {
-            println(
-              s"No tag published. Cannot publish an official release without a tag and Sonatype Central does not accept snapshot releases. Aborting release."
-            )
-            currentState
+            currentState.fail
           } else {
-            println("Tag push detected, publishing a stable release")
+            if (isTag) {
+              println("Tag push detected. Publishing a stable release")
+            } else if (isSnapshot) {
+              println("Snapshot suffix detected. Publishing a snapshot release")
+            }
             reloadKeyFiles ::
               sys.env.getOrElse("CI_CLEAN", "; clean ; sonatypeBundleClean") ::
               publishCommand ::
